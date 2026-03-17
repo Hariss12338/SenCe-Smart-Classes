@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SenCe Smart Education Centre</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/scrollreveal"></script>
+
+    <style>
+        :root {
+            --primary-bg: #0f172a;
+            --secondary-text: #f8fafc;
+            --accent: #38bdf8; 
+            --glass-card: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        /* CUSTOM CURSOR */
+        .cursor-glow {
+            position: fixed; top: 0; left: 0; width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, transparent 70%);
+            border-radius: 50%; pointer-events: none; z-index: 9999;
+            transform: translate(-50%, -50%); transition: width 0.3s, height 0.3s, background-color 0.3s;
+        }
+
+        /* PROGRESS BAR */
+        #progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 2000; background: transparent; }
+        #progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #38bdf8, #818cf8, #c084fc); transition: width 0.1s; }
+
+        /* FLOATING & AMBIENT ANIMATIONS */
+        @keyframes floatY {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+        .floating { animation: floatY 6s ease-in-out infinite; }
+        
+        .ambient-shape { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.3; z-index: -1; animation: floatShape 20s infinite alternate; pointer-events: none; }
+        .shape-1 { top: 10%; left: 5%; width: 350px; height: 350px; background: #38bdf8; }
+        .shape-2 { bottom: 20%; right: 5%; width: 450px; height: 450px; background: #c084fc; animation-delay: -10s; }
+        @keyframes floatShape {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(150px, -100px) scale(1.2); }
+        }
+
+        /* GRADIENT TEXT & TYPING */
+        .gradient-text {
+            background: linear-gradient(to right, #38bdf8, #818cf8, #e879f9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+        .cursor-type { display: inline-block; width: 3px; background-color: var(--accent); animation: blink 1s step-end infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* RESET & BASE */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            color: var(--secondary-text);
+            background: #0f172a;
+            overflow-x: hidden;
+            line-height: 1.6;
+            scroll-behavior: smooth;
+        }
+
+        /* DYNAMIC BG */
+        #bg-canvas { position: fixed; top: 0; left: 0; z-index: -1; pointer-events: none; }
+        .gradient-overlay {
+            position: fixed; inset: 0;
+            background: linear-gradient(-45deg, #0f172a, #1e293b, #0c4a6e, #1e1b4b);
+            background-size: 400% 400%;
+            animation: gradientMove 15s ease infinite;
+            z-index: -2;
+        }
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* HEADER & 360 LOGO */
+        header {
+            position: fixed; top: 0; width: 100%; z-index: 1000;
+            transition: 0.4s ease-in-out; padding: 1.5rem 5%;
+        }
+        header.scrolled {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(15px);
+            padding: 0.8rem 5%;
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        nav { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        
+        .logo-box { display: flex; align-items: center; gap: 12px; }
+        .logo-360 {
+            width: 42px; height: 42px;
+            background: linear-gradient(135deg, var(--accent), #818cf8);
+            border-radius: 10px;
+            display: flex; justify-content: center; align-items: center;
+            color: white; font-weight: 800;
+            animation: rotateSpin 6s linear infinite;
+        }
+        @keyframes rotateSpin { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
+
+        .nav-links { display: flex; gap: 25px; list-style: none; }
+        .nav-links a { text-decoration: none; color: #cbd5e1; font-weight: 500; font-size: 0.9rem; transition: 0.3s; }
+        .nav-links a:hover { color: var(--accent); }
+
+        /* HERO SECTION */
+        .hero {
+            height: 100vh;
+            display: flex; flex-direction: column; justify-content: center;
+            align-items: center; text-align: center; padding: 0 10%;
+        }
+        .main-slogan { font-size: clamp(1rem, 2.5vw, 1.8rem); color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 20px; }
+        .hero h1 { font-size: clamp(2.5rem, 8vw, 5rem); font-weight: 800; line-height: 1.1; margin-bottom: 25px; color: #fff; }
+        
+        .btn-group { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+        .btn { padding: 16px 38px; border-radius: 50px; text-decoration: none; font-weight: 600; transition: 0.3s; cursor: pointer; display: inline-block; }
+        .btn-primary { background: var(--accent); color: #0f172a; box-shadow: 0 10px 25px rgba(56, 189, 248, 0.3); }
+        .btn-outline { border: 2px solid rgba(255,255,255,0.2); color: white; }
+        .btn:hover { transform: translateY(-5px); filter: brightness(1.1); }
+
+        /* COMMON SECTION STYLING */
+        section { padding: 100px 10%; position: relative; max-width: 1400px; margin: 0 auto; }
+        .section-title { text-align: center; font-size: clamp(2.2rem, 5vw, 3rem); margin-bottom: 60px; font-weight: 800; color: #fff; }
+
+        /* ABOUT SECTION ALIGNMENT */
+        .about-wrapper { display: grid; grid-template-columns: 1fr 1.2fr; gap: 60px; align-items: center; }
+        .about-img-box img { width: 100%; border-radius: 30px; border: 1px solid var(--border); box-shadow: 0 30px 60px rgba(0,0,0,0.4); }
+        .stats-grid { display: flex; gap: 40px; margin-top: 40px; }
+        .stat-card h2 { font-size: 2.8rem; color: var(--accent); font-weight: 800; }
+        .stat-card p { color: #94a3b8; font-weight: 500; }
+
+        /* 3x3 GRID ALIGNMENT */
+        .grid-layout { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; margin-top: 20px; }
+        .card {
+            background: var(--glass-card); border: 1px solid var(--border);
+            padding: 35px; border-radius: 25px; backdrop-filter: blur(12px);
+            transition: all 0.4s ease; height: 100%;
+            position: relative; overflow: hidden;
+        }
+        .card::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 60%);
+            opacity: 0; transform: scale(0.5); transition: opacity 0.4s, transform 0.4s; pointer-events: none;
+        }
+        .card:hover::before { opacity: 1; transform: scale(1); }
+        .card:hover { 
+            transform: translateY(-15px) scale(1.02); 
+            border-color: #818cf8; 
+            box-shadow: 0 20px 40px rgba(129, 140, 248, 0.2); 
+            background: rgba(255,255,255,0.08); 
+        }
+        .card h3 { color: var(--accent); margin-bottom: 12px; font-size: 1.4rem; }
+
+        /* GALLERY 3x3 */
+        .gallery-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .gallery-item { height: 260px; border-radius: 20px; overflow: hidden; border: 1px solid var(--border); cursor: pointer; }
+        .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
+        .gallery-item:hover img { transform: scale(1.1); }
+
+        /* CONTACT & FB BUTTON */
+        .contact-flex { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; background: var(--glass-card); padding: 50px; border-radius: 40px; border: 1px solid var(--border); align-items: center; }
+        .fb-btn {
+            display: inline-flex; align-items: center; gap: 12px; margin-top: 25px;
+            background: #1877F2; color: #fff; text-decoration: none;
+            padding: 14px 28px; border-radius: 50px; font-weight: 600; transition: 0.3s;
+        }
+        .fb-btn:hover { background: #1565c0; transform: scale(1.05); box-shadow: 0 10px 20px rgba(24, 119, 242, 0.3); }
+
+        /* CHATBOT */
+        #chat-widget { position: fixed; bottom: 30px; right: 30px; z-index: 2000; }
+        #chat-btn { width: 65px; height: 65px; background: var(--accent); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #0f172a; cursor: pointer; box-shadow: 0 15px 35px rgba(56, 189, 248, 0.4); }
+        #chat-window { position: absolute; bottom: 85px; right: 0; width: 330px; height: 450px; background: #1e293b; border-radius: 24px; display: none; flex-direction: column; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.6); }
+        .chat-header { background: var(--accent); color: #0f172a; padding: 20px; font-weight: 800; font-size: 1.1rem; }
+        .chat-msgs { flex: 1; padding: 20px; overflow-y: auto; font-size: 0.9rem; color: #cbd5e1; }
+        .chat-input { padding: 15px; border-top: 1px solid var(--border); display: flex; gap: 10px; background: rgba(0,0,0,0.2); }
+        .chat-input input { flex: 1; background: none; border: none; color: #fff; outline: none; }
+
+        /* SMARTPHONE & TAB ALIGNMENT (CRITICAL FIX) */
+        @media (max-width: 1024px) {
+            .about-wrapper, .contact-flex { grid-template-columns: 1fr; }
+            .grid-layout, .gallery-container { grid-template-columns: repeat(2, 1fr); }
+            section { padding: 80px 5%; }
+        }
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .grid-layout, .gallery-container { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 2.8rem; }
+            .section-title { font-size: 2rem; }
+            .stats-grid { justify-content: center; flex-wrap: wrap; }
+            .contact-flex { padding: 30px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="progress-container"><div id="progress-bar"></div></div>
+    <div class="cursor-glow" id="cursor-glow"></div>
+    <div class="ambient-shape shape-1"></div>
+    <div class="ambient-shape shape-2"></div>
+
+    <div class="gradient-overlay"></div>
+    <canvas id="bg-canvas"></canvas>
+
+    <header id="navbar">
+        <nav>
+            <div class="logo-box">
+                <div class="logo-360">S</div>
+                <div class="logo-text">SenCe Smart Classes</div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">Who We Are</a></li>
+                <li><a href="#courses">Courses</a></li>
+                <li><a href="#faculty">Teachers</a></li>
+                <li><a href="#gallery">Gallery</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section id="home" class="hero">
+        <h2 class="main-slogan"><span id="typed-text"></span><span class="cursor-type">&nbsp;</span></h2>
+        <h1>Educating Minds, <br><span class="gradient-text">Shaping Futures</span></h1>
+        <div class="btn-group">
+            <a href="#about" class="btn btn-primary">Our Legacy</a>
+            <a href="#courses" class="btn btn-outline">Explore Courses</a>
+        </div>
+    </section>
+
+    <section id="about">
+        <h2 class="section-title gradient-text">Academic Excellence</h2>
+        <div class="about-wrapper">
+            <div class="about-img-box floating">
+                <img src="https://lh3.googleusercontent.com/gps-cs-s/AHVAweq2ycTYi7VlGOqfWCbv0Ioqqy1hWxHsY-PgaJ-cjU_ohaZhrZGIzMgC1vnJEwFjFlu2Eekd-j2klzHWcQQsO_m56OHAsM6ouG94DN2EhCY61SL7QYSagUCSoYjyq3YS1ZI8kS1zEHlqATg-=s680-w680-h510-rw" alt="Class Achievement">
+            </div>
+            <div class="about-info">
+                <h3 style="color: var(--accent); font-size: 2.2rem; margin-bottom: 20px;">18+ Years Legacy</h3>
+                <p style="color: #cbd5e1; font-size: 1.1rem; margin-bottom: 25px;">SenCe Smart Education Centre, Kharghar has been a beacon of success since 2003. Founded by Dr. Pratibha Mishra, we focus on smart conceptual learning rather than rote memorization.</p>
+                <div class="stats-grid">
+                    <div class="stat-card"><h2>1k+</h2><p>Students</p></div>
+                    <div class="stat-card"><h2>18+</h2><p>Experts</p></div>
+                    <div class="stat-card"><h2>2003</h2><p>Est.</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="courses">
+        <h2 class="section-title gradient-text">Our Programs</h2>
+        <div class="grid-layout">
+            <div class="card"><h3>7th - 10th</h3><p>CBSE/ICSE specialized foundation.</p></div>
+            <div class="card"><h3>11th Science</h3><p>Physics, Chem, Bio, Math focus.</p></div>
+            <div class="card"><h3>11th Commerce</h3><p>Accounts & Eco Excellence.</p></div>
+            <div class="card"><h3>12th Science</h3><p>Board + Entrance preparation.</p></div>
+            <div class="card"><h3>12th Commerce</h3><p>Professional commerce training.</p></div>
+            <div class="card"><h3>JEE Prep</h3><p>Engineering entrance rigorous training.</p></div>
+            <div class="card"><h3>NEET Prep</h3><p>Medical entrance excellence coaching.</p></div>
+            <div class="card"><h3>MHT-CET</h3><p>State level entrance training.</p></div>
+            <div class="card"><h3>Smart Batch</h3><p>Personalized 1-on-1 mentorship.</p></div>
+        </div>
+    </section>
+
+    <section id="faculty">
+        <h2 class="section-title gradient-text">Expert Faculty</h2>
+        <div class="grid-layout">
+            <div class="card"><h4>Dr. Pratibha Mishra</h4><p>Principal & Founder</p></div>
+            <div class="card"><h4>Mr. Mohit Tiwari</h4><p>IITian | Physics & Math</p></div>
+            <div class="card"><h4>Mrs. Radhakrishnan</h4><p>SST Expert (20 Yrs Exp)</p></div>
+            <div class="card"><h4>Mr. Pratap</h4><p>English Mentor</p></div>
+            <div class="card"><h4>Goraksh Sir</h4><p>Biology Specialist</p></div>
+            <div class="card"><h4>Bharti Ma'am</h4><p>Chemistry Gold Medalist</p></div>
+            <div class="card"><h4>Career Cell</h4><p>Mentorship Support</p></div>
+            <div class="card"><h4>IT Team</h4><p>Smart Tool Support</p></div>
+            <div class="card"><h4>Admin</h4><p>Student Management</p></div>
+        </div>
+    </section>
+
+    <section id="gallery">
+        <h2 class="section-title gradient-text">Life at SenCe</h2>
+        <div class="gallery-container">
+            <div class="gallery-item"><img src="https://lh3.googleusercontent.com/gps-cs-s/AHVAwepjMdZisQcMQD_RvwX9VmbwWF1n9eLIGSSVX_yDoI7L038HZX4i9NHLpnzlLZiPvS2IuOZkwEVCIaG7tlvKXrf8hKcgbjTeI3dZsxKsK0ZCa_H5hApQcGgE6-LybRrI2cdE30nsUbfnbsr5=s680-w680-h510-rw"></div>
+            <div class="gallery-item"><img src="https://lh3.googleusercontent.com/gps-cs-s/AHVAweqpcInbLX_Ey-7yDQL8YeHMrOMcVdQqgOJ4XRWWuOGODvt_7JAKO-EeeS6q05Nu54YJCfl7kbkAeoVGmtHcll_3nuNutyJ70oeoYa1pQX05icOPskYpGNd4VyW1XiG6teI87SIe3ErqzM4=s680-w680-h510-rw"></div>
+            <div class="gallery-item"><img src="https://lh3.googleusercontent.com/gps-cs-s/AHVAwepF4-rSED7O8mrkOcKJL6Dm0KO_sP6-z8ng4wV9SOeIl9befD2n0euE0hiT_HKKr7tzucFv03mR0NN6J1E7sJQP1YNFp9t4LyIQRuZoTeUs1gkl1dkggzEyH9Av8KHcLGAhmYcB=s680-w680-h510-rw"></div>
+            <div class="gallery-item"><img src="https://lh3.googleusercontent.com/gps-cs-s/AHVAwepSJprsIfu7q3zOA7YqHcvTKBrAddO6cCMdvF5hGZXhzKovJZWf7AhJceujAF1csQHvA3Yf1rPo1j9gNALfbe00quYgyT_DXqRy-BgnHbwkCssWGoKyBDCinJvZxi8ES-3EX3eRqeRGebYs=s680-w680-h510-rw"></div>
+            <div class="gallery-item"><img src="https://lh3.googleusercontent.com/gps-cs-s/AHVAwepLoQht7kZ2QN9Jsjdk5P1TfUzLAbT_DQIKSAEB-JibPtHjwlEeGazCe6jsUT2hy9aCYKi3ogK3I-IaWSO707M8P_YecGY0QRZ7K4v2gqglMwJIu_Xv_r0Xhd-TKljOG7iKnH72o5Y562qo=s680-w680-h510-rw"></div>
+            <div class="gallery-item"><img src="https://lh3.googleusercontent.com/gps-cs-s/AHVAwepSUNe01_5O0FOuXZD9ZUYmcQ-iIbUkSEvn8CVZafcbYUsUI_Yzc0oywfOSlwKN1ujnLZSI6hBLi3K1QNZXJ9J3gv0pjZ6PPLXwClWzyNsWmNNHH7ECHe1hPkVZnRvTzzOtlWZ7BYkgu8JC=s680-w680-h510-rw"></div>
+            <div class="gallery-item"><img src="https://lh3.googleusercontent.com/gps-cs-s/AHVAweoJGNT-OsaRKP8i5ZtercetWSxQ2plHkWGIkQvl8IgSvU5uqvQuWalYs3vEv7R0v2xnynGp7lWg-lJXzUJFaaKJ8W42ND4Qabm_VQYKGooepLITLi8P4WXm9Ou9V0Ofg10JQhsjmwoATr0=s680-w680-h510-rw"></div>
+            <div class="gallery-item"><img src="https://lh3.googleusercontent.com/gps-cs-s/AHVAweq2ycTYi7VlGOqfWCbv0Ioqqy1hWxHsY-PgaJ-cjU_ohaZhrZGIzMgC1vnJEwFjFlu2Eekd-j2klzHWcQQsO_m56OHAsM6ouG94DN2EhCY61SL7QYSagUCSoYjyq3YS1ZI8kS1zEHlqATg-=s680-w680-h510-rw"></div>
+            <div class="gallery-item"><img src="https://lh3.googleusercontent.com/gps-cs-s/AHVAwepKhKxw0PbfZSwVHzJpHiG1ZR30NgbH3zScx6vXMU8x7TMLIf1iWB2g0K6t8aiEtL4w11LnmHimRq-V-B8pezs9TbnTRS-QUwS76uw2u-yP3-n7ukFh0d7sTIPmnRZDDw2MWYuTqoQPKQy5=s680-w680-h510-rw"></div>
+        </div>
+    </section>
+
+    <section id="contact">
+        <div class="contact-flex">
+            <div>
+                <h2 style="color: white; margin-bottom: 25px;">Contact Info</h2>
+                <p style="margin-bottom: 15px;"><i data-lucide="map-pin" style="color:var(--accent); vertical-align: middle;"></i> 10th Floor, The Pacific, Kharghar, Panvel.</p>
+                <p style="margin-bottom: 15px;"><i data-lucide="phone" style="color:var(--accent); vertical-align: middle;"></i> +91 98339 88772</p>
+                <a href="https://www.facebook.com/PratibhaMishraSence" target="_blank" class="fb-btn">
+                    <i data-lucide="facebook"></i> SenCe Facebook Page
+                </a>
+            </div>
+            <div class="map-placeholder" style="border-radius: 25px; overflow: hidden; height: 300px;">
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3772.3392305886617!2d73.067332!3d19.0307!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7c3dad6782531%3A0x64e292026850c904!2sKharghar%2C%20Navi%20Mumbai%2C%20Maharashtra!5e0!3m2!1sen!2sin!4v1710670000000!5m2!1sen!2sin" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+            </div>
+        </div>
+    </section>
+
+    <div id="chat-widget">
+        <div id="chat-window">
+            <div class="chat-header">Smart Assistant</div>
+            <div id="chat-msgs" class="chat-msgs">How can I help you? Ask about address or courses.</div>
+            <div class="chat-input">
+                <input type="text" id="user-in" placeholder="Type here...">
+                <button id="send-btn" style="background:var(--accent); border:none; padding: 10px 15px; border-radius: 12px; font-weight:700; cursor:pointer;">Go</button>
+            </div>
+        </div>
+        <div id="chat-btn"><i data-lucide="message-circle"></i></div>
+    </div>
+
+    <script>
+        // Scroll Effect & Progress Bar
+        window.onscroll = () => {
+            const nav = document.getElementById('navbar');
+            if (window.scrollY > 50) nav.classList.add('scrolled');
+            else nav.classList.remove('scrolled');
+            
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            document.getElementById("progress-bar").style.width = scrolled + "%";
+        };
+
+        // Custom Cursor Glow
+        const cursorGlow = document.getElementById('cursor-glow');
+        document.addEventListener('mousemove', (e) => {
+            cursorGlow.style.left = e.clientX + 'px';
+            cursorGlow.style.top = e.clientY + 'px';
+        });
+
+        // Typing Effect
+        const phrases = ["Redefining the smart way of learning", "Igniting Potential, Fueling Success", "Your Journey to Excellence Starts Here"];
+        let phraseIndex = 0; let letterIndex = 0; let currentPhrase = []; let isDeleting = false; let isEnd = false;
+        const typedTextElement = document.getElementById('typed-text');
+        
+        function loop() {
+            isEnd = false;
+            typedTextElement.innerHTML = currentPhrase.join('');
+            if (phraseIndex === phrases.length) { phraseIndex = 0; }
+            
+            if (phraseIndex < phrases.length) {
+                if (!isDeleting && letterIndex <= phrases[phraseIndex].length) {
+                    currentPhrase.push(phrases[phraseIndex][letterIndex]);
+                    letterIndex++;
+                    typedTextElement.innerHTML = currentPhrase.join('');
+                }
+                
+                if (isDeleting && letterIndex <= phrases[phraseIndex].length) {
+                    currentPhrase.pop(phrases[phraseIndex][letterIndex]);
+                    letterIndex--;
+                    typedTextElement.innerHTML = currentPhrase.join('');
+                }
+                
+                if (letterIndex == phrases[phraseIndex].length) {
+                    isEnd = true;
+                    isDeleting = true;
+                }
+                
+                if (isDeleting && letterIndex === 0) {
+                    currentPhrase = [];
+                    isDeleting = false;
+                    phraseIndex++;
+                    if (phraseIndex === phrases.length) { phraseIndex = 0; }
+                }
+            }
+            const speedUp = Math.random() * (80 - 50) + 50;
+            const normalSpeed = Math.random() * (150 - 80) + 80;
+            const time = isEnd ? 2000 : isDeleting ? speedUp : normalSpeed;
+            setTimeout(loop, time);
+        }
+        loop();
+
+        // Chatbot Logic
+        const responses = {
+            "address": "We are located at 10th Floor, The Pacific, Kharghar, Navi Mumbai.",
+            "course": "We coaching for 7th-10th, 11th-12th Science & Commerce, JEE, NEET.",
+            "teacher": "Our core faculty includes Dr. Pratibha Mishra, Mohit Tiwari, and 18+ experts.",
+            "default": "Type 'address', 'course' or 'teacher' to know more!"
+        };
+
+        const chatBtn = document.getElementById('chat-btn');
+        const chatWin = document.getElementById('chat-window');
+        chatBtn.onclick = () => chatWin.style.display = chatWin.style.display === 'flex' ? 'none' : 'flex';
+
+        document.getElementById('send-btn').onclick = () => {
+            const input = document.getElementById('user-in').value.toLowerCase();
+            const msgBox = document.getElementById('chat-msgs');
+            let reply = responses.default;
+            for(let key in responses) { if(input.includes(key)) reply = responses[key]; }
+            msgBox.innerHTML += `<div style="margin-top:15px; color:var(--accent);">You: ${input}</div>`;
+            msgBox.innerHTML += `<div style="margin-top:5px; color:#94a3b8;">Bot: ${reply}</div>`;
+            document.getElementById('user-in').value = "";
+            msgBox.scrollTop = msgBox.scrollHeight;
+        };
+
+        // 3D BACKGROUND
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        const starGeo = new THREE.BufferGeometry();
+        const posArr = new Float32Array(1200 * 3);
+        for(let i=0; i<3600; i++) { posArr[i] = (Math.random() - 0.5) * 10; }
+        starGeo.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
+        const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ size: 0.005, color: 0x38bdf8 }));
+        scene.add(stars);
+        camera.position.z = 2;
+        function animate() { requestAnimationFrame(animate); stars.rotation.y += 0.0005; renderer.render(scene, camera); }
+        animate();
+
+        lucide.createIcons();
+        ScrollReveal().reveal('.card, .gallery-item', { delay: 200, distance: '30px', origin: 'bottom', interval: 50 });
+    </script>
+</body>
+</html>
